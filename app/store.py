@@ -48,10 +48,26 @@ class Store:
             self._conn.commit()
             return int(cur.lastrowid)
 
+    @staticmethod
+    def _parse_trace(row: sqlite3.Row) -> dict:
+        d = dict(row)
+        for key in ("retrieved", "cited"):
+            if isinstance(d.get(key), str):
+                try:
+                    d[key] = json.loads(d[key])
+                except Exception:
+                    pass
+        return d
+
     def list_traces(self, limit: int = 50) -> list[dict]:
         with self._lock:
             rows = self._conn.execute("SELECT * FROM traces ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
-        return [dict(r) for r in rows]
+        return [self._parse_trace(r) for r in rows]
+
+    def get_trace(self, trace_id: int) -> Optional[dict]:
+        with self._lock:
+            row = self._conn.execute("SELECT * FROM traces WHERE id = ?", (trace_id,)).fetchone()
+        return self._parse_trace(row) if row else None
 
     def list_tickets(self, limit: int = 50) -> list[dict]:
         with self._lock:

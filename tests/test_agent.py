@@ -121,6 +121,17 @@ def test_api_endpoints(settings):
     assert "SupportPilot" in c.get("/dashboard").text
     assert c.post("/chat", json={"message": ""}).status_code == 422
 
+    trace_id = r["trace_id"]
+    trace_data = c.get(f"/traces/{trace_id}").json()
+    assert trace_data["id"] == trace_id
+    assert isinstance(trace_data["retrieved"], list)
+    assert c.get("/traces/99999").status_code == 404
+
+    chunk_resp = c.get("/chunks/account.md%230")
+    assert chunk_resp.status_code == 200
+    assert chunk_resp.json()["id"] == "account.md#0"
+    assert c.get("/chunks/nonexistent.md%239").status_code == 404
+
 
 def test_dashboard_escapes_script(settings):
     c = TestClient(create_app(settings, FakeLLM()))

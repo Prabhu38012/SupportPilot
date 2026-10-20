@@ -2,6 +2,7 @@ import hashlib
 import math
 import re
 from pathlib import Path
+from typing import Optional
 
 import chromadb
 
@@ -97,3 +98,15 @@ class Retriever:
         for cid, doc, meta, dist in zip(res["ids"][0], res["documents"][0], res["metadatas"][0], res["distances"][0]):
             chunks.append(Chunk(id=cid, source=meta["source"], heading=meta["heading"], text=doc, score=round(1 - dist, 4)))
         return chunks
+
+    def get_chunk(self, chunk_id: str) -> Optional[Chunk]:
+        res = self.col.get(ids=[chunk_id])
+        if not res or not res["ids"]:
+            return None
+        return Chunk(
+            id=chunk_id,
+            source=res["metadatas"][0]["source"],
+            heading=res["metadatas"][0]["heading"],
+            text=res["documents"][0],
+            score=1.0,
+        )

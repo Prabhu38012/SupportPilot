@@ -1,7 +1,7 @@
 import html
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
 from app.agent.core import SupportAgent
@@ -39,6 +39,20 @@ def create_app(settings: Optional[Settings] = None, llm=None) -> FastAPI:
     @app.get("/traces")
     def traces(limit: int = 50):
         return agent.store.list_traces(limit)
+
+    @app.get("/traces/{trace_id}")
+    def get_trace(trace_id: int):
+        t = agent.store.get_trace(trace_id)
+        if not t:
+            raise HTTPException(status_code=404, detail="Trace not found")
+        return t
+
+    @app.get("/chunks/{chunk_id:path}")
+    def get_chunk(chunk_id: str):
+        c = agent.retriever.get_chunk(chunk_id)
+        if not c:
+            raise HTTPException(status_code=404, detail="Chunk not found")
+        return c
 
     @app.get("/tickets")
     def tickets(limit: int = 50):
